@@ -6,6 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons'
 
 
 import api from '../../services/api'
+import { connect, disconnect, subscribeToNewDevs } from '../../services/socket'
 
 
 
@@ -15,6 +16,8 @@ function Main({ navigation }) {
     const [devs, setDevs] = useState([])
 
     const [currentRegion, setCurrentRegion] = useState(null)
+
+    const [techs, setTechs] = useState('')
 
 
     useEffect(() => {
@@ -30,8 +33,8 @@ function Main({ navigation }) {
                 setCurrentRegion({
                     latitude,
                     longitude,
-                    latitudeDelta: 0.04,
-                    longitudeDelta: 0.04,
+                    latitudeDelta: 0.08,
+                    longitudeDelta: 0.08,
 
                 })
 
@@ -42,6 +45,23 @@ function Main({ navigation }) {
         loadInitialPosition()
     }, [])
 
+    useEffect(() => { subscribeToNewDevs(dev => setDevs([...devs, dev])), [devs] })
+
+
+    function setupWebsocket() {
+        disconnect()
+
+
+
+        const { latitude, longitude } = currentRegion
+
+        connect(
+            latitude,
+            longitude, ~
+        techs,
+        )
+
+    }
 
     async function loadDevs() {
         const { latitude, longitude } = currentRegion
@@ -50,13 +70,18 @@ function Main({ navigation }) {
             params: {
                 latitude,
                 longitude,
-                techs: 'React JS'
+                techs
             }
         })
+        console.log(response.data.devs)
         setDevs(response.data.devs)
+        setupWebsocket()
     }
 
+
+
     function handleRegionChanged(region) {
+        console.log(region)
         setCurrentRegion(region)
 
     }
@@ -73,12 +98,17 @@ function Main({ navigation }) {
 
     return (
         <>
-            <MapView onRegionChangeComplete={handleRegionChanged} initialRegion={currentRegion} style={styles.map} >
+            <MapView
+                onRegionChangeComplete={handleRegionChanged}
+                initialRegion={currentRegion}
+                style={styles.map} >
+
                 {devs.map(dev =>
+
                     <Marker key={dev._id}
                         coordinate={{
-                            latitude: dev.location.coordinates[0],
-                            longitude: dev.location.coordinates[1]
+                            latitude: dev.location.coordinates[1],
+                            longitude: dev.location.coordinates[0]
                         }}>
 
                         <Image style={styles.avatar}
@@ -106,6 +136,8 @@ function Main({ navigation }) {
                     placeholderTextColor="#999"
                     autoCapitalize="words"
                     autoCorrect={false}
+                    value={techs}
+                    onChangeText={setTechs}
 
                 />
                 <TouchableOpacity onPress={loadDevs}
@@ -179,7 +211,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 15,
+        marginLeft: 12,
     },
 
 
